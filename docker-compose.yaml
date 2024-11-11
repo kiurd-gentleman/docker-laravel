@@ -1,0 +1,84 @@
+version: "3.7"
+
+networks:
+  laravel:
+    name: laravel
+
+services:
+
+  nginx:
+    build:
+        context: .
+        dockerfile: nginx.dockerfile
+    container_name: nginx
+    tty: true
+    depends_on:
+      - php
+      - mysql
+    ports:
+      - "8000:80"
+      - "8443:443"
+    volumes:
+      - ./:/var/www/html
+    networks:
+        - laravel
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: php
+    restart: unless-stopped
+    tty: true
+    volumes:
+      - ./:/var/www/html
+      - storage:/var/www/html/storage
+      - bootstrap_cache:/var/www/html/bootstrap/cache
+    networks:
+      - laravel
+
+  mysql:
+    image: mysql:5.7
+    container_name: mysql
+    restart: unless-stopped
+    tty: true
+    volumes:
+      - ./mysql:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: laravel
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - laravel
+  composer:
+    image: composer:latest
+    container_name: composer
+    tty: true
+    volumes:
+      - ./:/var/www/html
+    working_dir: /var/www/html
+    networks:
+      - laravel
+    depends_on:
+      - php
+
+volumes:
+  storage:
+  bootstrap_cache:
+#  npm:
+#    image: node:latest
+#    container_name: npm
+#    tty: true
+#    volumes:
+#      - ./:/var/www/html
+#    working_dir: /var/www/html
+#    networks:
+#      - laravel
+#    depends_on:
+#        - php
+#        - composer
